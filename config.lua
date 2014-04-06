@@ -8,8 +8,8 @@ MOAISim.setBoostThreshold ( 0 )
 
 local config = {
     title = "Conways Folley",
-    screenWidth = 480,
-    screenHeight = 320,
+    screenWidth = 620,
+    screenHeight = 480,
 	attribution = "scenes/attribution",
 }
 
