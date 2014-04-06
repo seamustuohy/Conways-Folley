@@ -23,6 +23,7 @@ rules = {
 }
 
 player_tiles = {
+   
    none = { 1, 7 },
    pOne = { 2, 8 },
    pTwo = { 3, 9 },
@@ -32,11 +33,30 @@ player_tiles = {
 }
 
 players = {
-   "pOne",
-   "pTwo",
-   "pThree",
-   "pFour",
-   "pFive"
+   {
+	  name = "none",
+	  tiles = { 1, 7 }
+   },
+   {
+	  name = "pOne",
+	  tiles = { 2, 8 }
+   },
+   {
+	  name = "pTwo",
+	  tiles = { 3, 9 }
+   },
+   {
+	  name = "pThree",
+	  tiles = { 4, 10 }
+   },
+   {
+	  name = "pFour",
+	  tiles = { 5, 11 }
+   },
+   {
+	  name = "pFive",
+	  tiles = { 6, 12 }
+   }
 }
 
 function onCreate(params)
@@ -76,7 +96,26 @@ function newGame(size)
 	board:setMapSize(col, row, cellH, cellW)
 
 	--fill board with empty cells
-	board.grid:fill(player_tiles['none'][2])
+	board.grid:fill(get_tile("none", "dead"))
 end
 
 
+function get_tile(name, state)
+   --set defaults
+   local tile_no = 1
+   local tile
+   
+   --if cell is dead get the dead tile, but don't be picky about it
+   if state == "dead" or state == false or state == 0 then
+	  tile_no = 2
+   end
+   
+   --identify player and get the correct tile
+   for _, i in pairs(players) do
+	  if i['name'] == name then
+		 tile = i.tiles[tile_no]
+	  end
+   end
+   --return tile for board/cell sprite tile set
+   return tile
+end
