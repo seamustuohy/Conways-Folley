@@ -3,7 +3,7 @@ local pcall = pcall
 local math = math
 
 --Local requirements
-local utils = require "code.libraries.utils"
+local utils = require "lib.utils"
 
 --Global requirements
 local viewport = viewport
