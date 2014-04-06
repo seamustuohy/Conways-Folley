@@ -75,28 +75,34 @@ function onCreate(params)
 	cell_layer = Layer {
         scene = scene,
     }
-	newGame(board_size)
+	build_board(board_size)
 end
 
 
-function newGame(size)
+function build_board(size)
 
-    board = MapSprite {
-	   texture = "assets/images/boards/basic.png",
-	   layer = board_layer,
-	   left = 0, top = 0
-	}
-	
-	--get sprite map
-	board:setMapSheets(62, 62, 6, 2)
+   local mid_l, mid_t = board_layer:getCenterPos()
+   local col, row = rules.board[size].cols, rules.board[size].rows
+   local cellH, cellW = 32, 32
+   --Get top left that puts center cell in center of the board.
+   mid_l = mid_l - (( cellW/2 ) * col )
+   mid_t = mid_t - (( cellH/2 ) * row )
+   
+   board = MapSprite {
+	  texture = "assets/images/boards/basic.png",
+	  layer = board_layer,
+	  left = mid_l, top = mid_t
+   }
+   
+   --get sprite map
+   board:setMapSheets(62, 62, 6, 2)
+   
+   --Set up board
+   board:setMapSize(col, row, cellH, cellW)
 
-	--Set up board
-	local col, row = rules.board[size].cols, rules.board[size].rows
-	local cellH, cellW = 32, 32
-	board:setMapSize(col, row, cellH, cellW)
-
-	--fill board with empty cells
-	board.grid:fill(get_tile("none", "dead"))
+   --fill board with empty cells
+   board.grid:fill(get_tile("none", "dead"))
+   
 end
 
 
