@@ -17,6 +17,12 @@ function onCreate(params)
 	   parent = view,
 	}
 	
+	players_button = Button {
+	   text = "2",
+	   onClick = onPlayerClick,
+	   parent = view,
+	}
+	
 	start_button = Button {
 	   text = "Start",
 	   onClick = onStartClick,
@@ -26,7 +32,8 @@ end
 
 function onStartClick(e)
    size = size_button:getText()
-   SceneManager:openScene("scenes/game", {animation = "fade", board_size=size})
+   player_num = players_button:getText()
+   SceneManager:openScene("scenes/game", {animation = "fade", board_size=size, player_num=player_num})
 end
 
 function onSizeClick(e)
@@ -36,5 +43,15 @@ function onSizeClick(e)
 	  size_button:setText("Large")
    else
 	  size_button:setText("Small")
+   end
+end
+
+function onPlayerClick(e)
+   num = tonumber(players_button:getText())
+   if num  >= 5 then
+	  players_button:setText("2")
+   else
+	  new = tostring(num + 1)
+	  players_button:setText(new)
    end
 end
