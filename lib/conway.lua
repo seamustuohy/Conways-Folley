@@ -41,6 +41,7 @@ conway.players = {}
 conway.cache = {}
 
 function conway:init(boardSize, players)
+   log.name("init")
    if boardSize then
 	  self.boardSize = boardSize
    else
@@ -50,6 +51,7 @@ function conway:init(boardSize, players)
 end
 
 function conway:initPlayers(players)
+   log.name("initPlayers")
    --Takes a list of names ['bob', 'sam', 'peter']
    if type(players) ~= 'table' then
 	  if pcall(function () return players%1==0 end) then
@@ -62,6 +64,7 @@ function conway:initPlayers(players)
 end
 
 function conway:getPlayers(num)
+   log.name("getPlayers")
    players = {}
    for _i=0, num, 1 do
 	  table.insert( players, conway:getUID() )
@@ -70,6 +73,7 @@ function conway:getPlayers(num)
 end
 
 function conway:getCell(x, y)
+   log.name("getMove")
    if self.board[x] then
 	  if self.board[x][y] then
 		 return self.board[x][y]
@@ -80,6 +84,7 @@ end
 
 
 function conway:setCell(x, y, player, alive)
+   log.name("setCell")
    if not self.board[x] then
 	  self.board[x] = {}
    end
@@ -91,6 +96,7 @@ end
 
 function conway:validMove(x,y,player)
    --The totally simple calculation is if there other cell types  and you are not already in the area you can't play a cell. Otherwise, go ahead.
+   log.name("validMove")
    local c = self:getCell(x,y)
    local num, cells = self:neighborStats(c, self:neighbors(x,y))
    if cells[player] then
@@ -179,6 +185,7 @@ end
 
 --iterator
 function conway:getAllCells(board)
+   log.name("getAllCells")
    local xi, yi, cell
    xi, yi = next(board)
    return function ()
