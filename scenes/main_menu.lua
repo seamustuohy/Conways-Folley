@@ -27,7 +27,7 @@ function onCreate(params)
 end
 
 function onStartClick(e)
-    SceneManager:openScene("scenes/game_menu", {animation = "fade"})
+    SceneManager:openScene("scenes/game_menu", {animation = "changeNow"})
 end
 
 function onQuitClick(e)

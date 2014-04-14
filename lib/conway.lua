@@ -12,7 +12,7 @@ local viewport = viewport
 
 local conway = {}
 		
-conway.logging = 5
+conway.logging = 1
 log = {
    --Core debugging
    debug = function (...)
@@ -27,21 +27,21 @@ log = {
 	  if conway.logging >= 2 then
 		 print(...) end end,
 }
-
-conway.boardSize = nil
-conway.board = {}
---The number of neighbors to determine life
-conway.life = { [1]={ 2, 3 },
-			  [0]={ 3 } }
-
 conway.defaults = {
    boardSize=16,
 }
-conway.players = {}
-conway.cache = {}
+conway.life = { [1]={ 2, 3 },
+				[0]={ 3 } }
 
+log.name("init")
 function conway:init(boardSize, players)
-   log.name("init")
+   self.history = {}
+   self.repeating = false
+   conway.boardSize = nil
+   conway.board = {}
+   --The number of neighbors to determine life   
+   conway.players = {}
+   conway.cache = {}
    if boardSize then
 	  self.boardSize = boardSize
    else
@@ -51,7 +51,6 @@ function conway:init(boardSize, players)
 end
 
 function conway:initPlayers(players)
-   log.name("initPlayers")
    --Takes a list of names ['bob', 'sam', 'peter']
    if type(players) ~= 'table' then
 	  if pcall(function () return players%1==0 end) then
@@ -160,9 +159,9 @@ function conway:neighbors(x, y)
 		 end
 	  end
    end
-   if next(neighbors) then
-	  print("neighbors found", #neighbors)
-   end
+--   if next(neighbors) then
+	  --print("neighbors found", #neighbors)
+--   end
    return neighbors
 end
 
@@ -178,7 +177,7 @@ function conway:getEnv(x, y)
    local n_num, hood, other
    n_num, hood, other = conway:neighborStats(cell, n_list)
    if cell.alive == true then
-	  print(x, y, cell.alive, n_num, hood, other)
+--	  print(x, y, cell.alive, n_num, hood, other)
    end
    return cell, n_num, hood, other
 end
@@ -222,7 +221,7 @@ function conway:deepcopy(orig)
 end
 
 function conway:nextGeneration()
-   print("Next Generation")
+--   print("Next Generation")
    local temp_board = self:deepcopy(self.board)
    local x, y, i
    i = 0
@@ -241,7 +240,39 @@ function conway:nextGeneration()
 		 end
 	  end
    end
+   local rep_num = 0
+   local _, t
+   for _,t in ipairs(self.history) do
+--	  print("hist", _, t, temp_board)
+	  if self:equivalent(t, temp_board) then
+		 rep_num = rep_num + 1
+	  end
+   end
+   if rep_num > 2 then
+	  self.repeating = true
+   end
+   table.insert(self.history, temp_board)
+   if #self.history > 6 then
+	  table.remove(self.history, 1)
+   end
    self.board = temp_board
+end
+
+
+
+function conway:equivalent(a,b)
+   if a.player then
+	  if a.player == b.player and b.alive == a.alive then
+		 return true
+	  else
+--		 print('notSame', a.player, b.player, a.alive, b.alive)
+		 return false
+	  end
+   end
+   for k,va in pairs(a) do
+	  if not self:equivalent(va, b[k]) then return false end
+   end
+   return true
 end
 
 
