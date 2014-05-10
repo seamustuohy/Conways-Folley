@@ -1,6 +1,10 @@
 module(..., package.seeall)
 
 
+--TODO ADD PLAYER CREATION and LEVEL CHOOSING!!!
+player_name = "bob"
+level = 1
+
 function onCreate(params)
     view = View {
         scene = scene,
@@ -96,11 +100,13 @@ function onStartClick(e)
    end
    size = size_button:getText()
    player_num = players_button:getText()
-   SceneManager:openScene("scenes/game",
+   SceneManager:openScene("scenes/level/01",
 						  {animation = "crossFade",
 						   board_size=size,
 						   player_num=player_num,
-						   game_type=growth_rate})
+						   game_type=growth_rate,
+						   player_name=player_name,
+						   level=level,})
    
 end
 

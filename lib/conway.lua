@@ -1,14 +1,7 @@
---MOAI requirements
-local pcall = pcall
-local math = math
-
 --Local requirements
 local utils = require "lib.utils"
-
---Global requirements
-local viewport = viewport
-
---lua requirements
+local garden = require "lib.garden"
+local root = require "lib.cell"
 
 local conway = {}
 		
@@ -27,62 +20,52 @@ log = {
 	  if conway.logging >= 2 then
 		 print(...) end end,
 }
-conway.defaults = {
-   boardSize=16,
-}
-conway.life = { [1]={ 2, 3 },
-				[0]={ 3 } }
 
-log.name("init")
-function conway:init(boardSize, players)
-   self.history = {}
-   self.repeating = false
-   conway.boardSize = nil
+function conway:onCreate(boardSize)
+   assert(boardSize)
+   conway.boardSize = boardSize
    conway.board = {}
-   --The number of neighbors to determine life   
-   conway.players = {}
-   conway.cache = {}
-   if boardSize then
-	  self.boardSize = boardSize
-   else
-	  self.boardSize = self.defaults['boardSize']
-   end
-   self:initPlayers(players)
 end
 
-function conway:initPlayers(players)
-   --Takes a list of names ['bob', 'sam', 'peter']
-   if type(players) ~= 'table' then
-	  if pcall(function () return players%1==0 end) then
-		 players = getPlayers(players)
+--Runs all cells through a growth pattern
+function conway:init_board(start_garden)
+--   print("Next Generation")
+   local x, y
+   for x = 1, self.boardSize, 1 do
+	  if not self.board[x] then
+		 self.board[x] = {}
+	  end
+	  for y = 1, self.boardSize, 1 do
+		 if not self.board[x][y] then
+			local soil, id, alive
+			if start_garden[x] and start_garden[x][y] then
+			   soil, id, alive = unpack(start_garden[x][y])
+			else
+			   soil, id, alive = unpack(start_garden.default)
+			end
+--			print("setting garden", soil, id, alive)
+			self:build_cell(x, y, soil, id, alive)
+		 end
 	  end
    end
-   for _, plr in ipairs(players) do
-	  table.insert(self.players, plr)
-   end
 end
 
-function conway:getPlayers(num)
-   log.name("getPlayers")
-   players = {}
-   for _i=0, num, 1 do
-	  table.insert( players, conway:getUID() )
-   end
-   return players
-end
+--[[
+   Cell properties:
+   * id (str): The type of plant / object it is (eg. violet, earth, rock)
+   * alive (str [dead|alive]): If there is a plant alive or dead in the cell.
+   * age (int): The ammount of turns the cell has been alive for in a row.
+   * adult (bool): If the plant is an adult or a child.
+   * soil (str): The type of soil in the cell. [barren|fertile|snow]
+]]--
 
-function conway:getCell(x, y)
-   log.name("getMove")
-   if self.board[x] then
-	  if self.board[x][y] then
-		 return self.board[x][y]
-	  end
-   end
-   return {alive=false, player="none"}
-end
-
-
-function conway:setCell(x, y, player, alive)
+--! @name cell
+--! @param x, y (int): The x and y coords of the cell on the board
+--! @param soil (str): The type of soil for the cell
+--! @param id (str): the id of the cell to place.
+--! @param alive (str): if the cell is alive or dead.
+--! @brief Takes basic cell info and creates a generic cell from that info.
+function conway:build_cell(x, y, soil, id, alive)
    log.name("setCell")
    if not self.board[x] then
 	  self.board[x] = {}
@@ -90,59 +73,41 @@ function conway:setCell(x, y, player, alive)
    if not self.board[x][y] then
 	  self.board[x][y] = {}
    end
-   self.board[x][y] = conway:cell(player, alive)
+   self.board[x][y] = root:new(soil, id, alive)
 end
 
-function conway:validMove(x,y,player)
-   --The totally simple calculation is if there other cell types  and you are not already in the area you can't play a cell. Otherwise, go ahead.
-   log.name("validMove")
-   local c = self:getCell(x,y)
-   local num, cells = self:neighborStats(c, self:neighbors(x,y))
-   if cells[player] then
-	  return true
-   elseif num >= 1 then
-	  return false
-   else
-	  return true
+function conway:get_cell(x, y)
+   log.name("get cell")
+   if self.board[x] then
+	  if self.board[x][y] then
+		 return self.board[x][y]
+	  end
    end
-end
-
-function conway:cell(player, alive)
-   log.name("conway:cell")
-   if not conway.cache[player] then
-	  conway.cache[player] = {}
-   end
-   if alive == false then state = 'dead' else state = 'alive' end
-   if not conway.cache[player][state] then
-	  conway.cache[player][state] = { ['player']=player,
-										['alive']=alive }
-   end
-   return conway.cache[player][state]
+   log.error("Cell is out of bounds")
 end
 
 function conway:neighborStats(cell, octet)
    --A table of the eight neibors (or less) of a cell
    log.name("cell:getNeighborhood")
-   if not cell then cell = self:cell("none", false) end
-   local _cells = 0
-   local _players = {}
-   local _baddies = 0
+   local cells = 0
+   local plants = {}
+   local other = 0
    if next(octet) then
-	  for _,_n in ipairs(octet) do
-		 local state
-		 if _n.alive == true then state = 1 else state = 0 end
-		 _cells = _cells + state
-		 if _players[_n.player] then
-			_players[_n.player] = _players[_n.player] + state
+	  for _,n in ipairs(octet) do
+		 --Get the other plants state from the garden
+		 local state = garden[n.id].interact(cell.id, n.alive)
+		 cells = cells + state
+		 if plants[n.id] then
+			plants[n.id] = plants[n.id] + state
 		 else
-			_players[_n.player] = state
+			plants[n.id] = state
 		 end
-		 if _n.player ~= cell.player then
-			_baddies = _baddies + state
+		 if n.id ~= cell.id then
+			other = other + state
 		 end
 	  end
    end
-   return _cells, _players, _baddies
+   return cells, plants, other
 end
 
 function conway:neighbors(x, y)
@@ -165,35 +130,30 @@ function conway:neighbors(x, y)
    return neighbors
 end
 
-function conway:getEnv(x, y)
+function conway:get_env(x, y)
    --get neighbors
    local n_list = conway:neighbors( x, y )
-   local cell
-   if not self.board[x] or not self.board[x][y] then
-	  cell = self:cell("none", false)
-   else
-	  cell = self.board[x][y]
-   end
+   local cell = self.board[x][y]
    local n_num, hood, other
-   n_num, hood, other = conway:neighborStats(cell, n_list)
-   if cell.alive == true then
+   n_num, total_num, other_num = conway:neighborStats(cell, n_list)
+--   if cell.alive == true then
 --	  print(x, y, cell.alive, n_num, hood, other)
-   end
-   return cell, n_num, hood, other
+--   end
+   return cell, n_num, total_num, other_num
 end
 
 --iterator
-function conway:getAllCells(board)
+function conway:getAllCells()
    log.name("getAllCells")
    local xi, yi, cell
-   xi, yi = next(board)
+   xi, yi = next(self.board)
    return function ()
 	  if type(yi) == 'table' then
 		 ci, cell = next(yi, ci)
 		 if ci then
 			return xi, ci, cell
 		 else
-			xi, yi = next(board, xi)
+			xi, yi = next(self.board, xi)
 			if yi then
 			   ci, cell = next(yi, ci)
 			   if ci then
@@ -220,116 +180,22 @@ function conway:deepcopy(orig)
     return copy
 end
 
-function conway:nextGeneration()
+--Runs all cells through a growth pattern
+function conway:next_generation()
 --   print("Next Generation")
-   local temp_board = self:deepcopy(self.board)
-   local x, y, i
-   i = 0
+   local x, y
    for x = 1, self.boardSize, 1 do
 	  for y = 1, self.boardSize, 1 do
-		 i = i + 1
-		 _cell = self:calculateLife( x, y )
-		 if _cell.player ~= "none" then
-			if not temp_board[x] then
-			   temp_board[x] = {}
-			end
-			if not temp_board[x][y] then
-			   temp_board[x][y] = {}
-			end
-			temp_board[x][y] = _cell
-		 end
+		 self:grow( x, y )
 	  end
    end
-   local rep_num = 0
-   local _, t
-   for _,t in ipairs(self.history) do
---	  print("hist", _, t, temp_board)
-	  if self:equivalent(t, temp_board) then
-		 rep_num = rep_num + 1
-	  end
-   end
-   if rep_num > 2 then
-	  self.repeating = true
-   end
-   table.insert(self.history, temp_board)
-   if #self.history > 6 then
-	  table.remove(self.history, 1)
-   end
-   self.board = temp_board
 end
 
-
-
-function conway:equivalent(a,b)
-   if a.player then
-	  if a.player == b.player and b.alive == a.alive then
-		 return true
-	  else
---		 print('notSame', a.player, b.player, a.alive, b.alive)
-		 return false
-	  end
-   end
-   for k,va in pairs(a) do
-	  if not self:equivalent(va, b[k]) then return false end
-   end
-   return true
-end
-
-
-function conway:calculateLife(x,y)
-   --[[Takes a cell {player, alive} and a neighborhood table and returns the replacement cell for that position.]]--
-   log.name("conway:calculateLife")
-   --get envrionment
-   local cell, num, hood, other = self:getEnv( x, y )
-   
-   --Crete the default dead cell to start with
-   local state
-   if cell.alive == true then state = 1 else state = 0 end
-   local _alive = self.life[state]
---   print(cell.alive)
-   --Living cell conditions
-   if state == 1 then
-	  local life = num - other
-	  if utils:contains(_alive,  life ) then
-		 --It's Alive!
---		 log.debug(num, hood, other)
-		 log.debug("player cell lived another day with", life, "neighbors")
-		 return self:cell(cell.player, true)
-	  else
-		 --not enough neighbors to live
---		 log.debug(_alive[1], "needed to live")
-		 log.debug("player cell died from lonelyness with", life, "neighbors")
---		 log.debug(num, hood, other)
-		 return self:cell(cell.player, false)
-	  end
-   else --dead cell conditions
-	  --Set bar at current set (if it has lived before)
-	  local count = 0
-	  local newCell = cell
-	  if cell.player ~= "none" then
-		 if hood[cell.player] then
-			count = hood[cell.player]
-		 else
-			count = 0
-		 end
-	  end
-	  --Get the player with the most cells alive nearby
-	  for _player,_count in pairs(hood) do
-		 --get greatest sized cell cluster
-		 if _count > count then
-			newCell = conway:cell(_player, true)
-			count = _count
-		 end
-	  end
-	  --is it enough to create life
-	  if utils:contains(_alive, count) then
-		 log.debug("Cell Sprung to life with", life, "neighbors")
-		 return self:cell(newCell.player, true)
-	  else
---		 print("cell stayed dead")
-		 return self:cell(cell.player, false)
-	  end
-   end
+--! Runs a cells growth pattern
+function conway:grow(x,y)
+   local cell = self:get_cell(x, y)
+   local num, hood, other = self:get_env( x, y )
+   cell:grow(num, hood, other)
 end
 
 

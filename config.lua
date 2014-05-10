@@ -8,8 +8,10 @@ MOAISim.setBoostThreshold ( 0 )
 
 local config = {
     title = "Conways Folley",
-    screenWidth = 620,
-    screenHeight = 480,
+--	screenWidth = 1240,
+--	screenHeight = 960,
+    screenWidth = MOAIEnvironment.verticalResolution or 960,
+    screenHeight = MOAIEnvironment.horizontalResolution or 640,
 	attribution = "scenes/attribution",
 	color = {
 	   {229/255, 153/255, 135/255, 1},

@@ -391,7 +391,7 @@ function board_touch(e)
 	  if current.touch.move ~= true then
 		 if e.x == current.touch.last[1] and  e.y == current.touch.last[2] then
 			x, y = get_grid_coords( e.x, e.y )
-			choose_cell(x, y)			
+			choose_cell(x, y)
 		 end
 	  else
 		 current.touch.move = false
