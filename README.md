@@ -1,5 +1,5 @@
 
-
+This was simply an exploration in Moai to do multi-platform game development. It is abandoned.
 
 
 # Hard coded paths for assets.
